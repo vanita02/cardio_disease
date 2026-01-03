@@ -60,311 +60,147 @@
 #     else:
 #         st.success("✅ Low Risk of Cardio Disease")
 
-
 import streamlit as st
-import joblib
-import pandas as pd
 
-# Set page config for a professional look
 st.set_page_config(
-    page_title="❤️ Cardio Disease Prediction",
+    page_title="Cardiovascular Disease Risk Assessment",
     page_icon="❤️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# ULTIMATE CSS - FORCES ALL INPUT TEXT TO BLACK + CENTERED RESULT
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
-    
     .main {
-        background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab, #ff9ff3, #54a0ff);
-        background-size: 400% 400%;
-        animation: gradientShift 15s ease infinite;
-        padding: 2rem 0;
-        font-family: 'Poppins', sans-serif;
+        background-color: #f8f9fa;
     }
     
-    @keyframes gradientShift {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #1e3a8a 0%, #3b82f6 100%);
     }
     
-    /* FORCE ALL INPUT TEXT TO BLACK */
-    input, select, [role="combobox"], [data-baseweb="select"] *, 
-    .stSelectbox span, .stNumberInput span,
-    input[type="number"], input[type="text"] {
-        color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important;
-        caret-color: #000000 !important;
-    }
-    
-    [role="listbox"] *, [data-baseweb="menu"] * {
-        color: #000000 !important;
-        background: #FFFFFF !important;
-    }
-    
-    .stSelectbox > div > div > div, 
-    .stNumberInput > div > div > div {
-        background: #FFFFFF !important;
-        border-radius: 15px !important;
-        border: 2px solid rgba(255,255,255,0.8) !important;
-    }
-    
-    .stSelectbox label, .stNumberInput label {
-        color: #000000 !important;
-        font-weight: 600 !important;
-    }
-    
-    /* CENTERED RESULT BOX */
-    .result-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 100%;
-        padding: 2rem 0;
-    }
-    
-    .result-box {
-        background: linear-gradient(135deg, #FF4757, #FF3838, #C44569);
+    [data-testid="stSidebar"] .css-1d391kg, [data-testid="stSidebar"] .css-pkbazv {
         color: white;
-        padding: 4rem 3rem;
-        border-radius: 30px;
+    }
+    
+    .sidebar-title {
+        color: white;
+        font-size: 1.5rem;
+        font-weight: 700;
         text-align: center;
-        box-shadow: 0 30px 70px rgba(255,71,87,0.6);
-        max-width: 600px;
-        width: 90%;
-        transform: scale(1.05);
-        font-family: 'Poppins', sans-serif;
+        padding: 1rem 0;
+        border-bottom: 2px solid rgba(255,255,255,0.3);
+        margin-bottom: 1rem;
     }
     
-    .result-box.low-risk {
-        background: linear-gradient(135deg, #2ED573, #1ABC9C, #48D1CC);
-        box-shadow: 0 30px 70px rgba(46,213,115,0.6);
+    .main-title {
+        text-align: center;
+        color: #1e3a8a;
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
     }
     
-    .result-title {
-        font-size: 2.5rem;
-        font-weight: 800;
-        margin: 0 0 1rem 0;
-        text-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+    .subtitle {
+        text-align: center;
+        color: #64748b;
+        font-size: 1.3rem;
+        margin-bottom: 2rem;
     }
     
-    .result-prob {
-        font-size: 5rem;
-        font-weight: 900;
-        margin: 1rem 0;
-        text-shadow: 3px 3px 15px rgba(0,0,0,0.4);
-        background: linear-gradient(45deg, white, rgba(255,255,255,0.8));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+    .hero-card {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        padding: 3rem;
+        border-radius: 15px;
+        border-left: 8px solid #2563eb;
+        margin: 2rem 0;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
     
-    .result-label {
-        font-size: 1.6rem;
-        margin: 1rem 0;
-        opacity: 0.95;
+    .cta-button {
+        background-color: #2563eb;
+        color: white;
+        padding: 1rem 3rem;
+        border-radius: 10px;
+        font-size: 1.2rem;
         font-weight: 600;
-    }
-    
-    .glass-card {
-        background: rgba(255, 255, 255, 0.25);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        padding: 2.5rem;
-        border-radius: 25px;
-        box-shadow: 0 25px 50px rgba(0,0,0,0.2);
-        border: 1px solid rgba(255,255,255,0.3);
-        margin: 1rem 0;
-    }
-    
-    .stButton > button {
-        background: linear-gradient(45deg, #FF6B6B, #FF8E53, #FECA57) !important;
-        color: white !important;
-        border-radius: 30px !important;
-        padding: 1rem 3rem !important;
-        font-weight: 700 !important;
-        font-size: 1.3rem !important;
-        box-shadow: 0 12px 35px rgba(255,107,107,0.4) !important;
-    }
-    
-    h1, h2, h3 {
-        color: #000000 !important;
-        font-weight: 700 !important;
-    }
-    
-    .stMetric > label {
-        color: #000000 !important;
+        text-align: center;
+        display: inline-block;
+        text-decoration: none;
+        margin-top: 1rem;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# ================= LOAD PIPELINE =================
-@st.cache_resource
-def load_pipeline():
-    return joblib.load("cardio_pipeline.pkl")
-
-pipeline = load_pipeline()
-
-# ================= HEADER =================
-col1, col2 = st.columns([3, 1])
-with col1:
+with st.sidebar:
+    st.markdown('<div class="sidebar-title">❤️ CardioRisk AI</div>', unsafe_allow_html=True)
     st.markdown("""
-        <div class="glass-card">
-            <h1 style='text-align: center;'>❤️ Cardio Disease Prediction</h1>
-            <p style='text-align: center; font-size: 1.4rem; color: #000000;'>
-                🚀 Enter your health metrics for AI-powered instant risk assessment
+        <div style="color: white; padding: 1rem; line-height: 1.8;">
+            <p><strong>Clinical Decision Support System</strong></p>
+            <p style="font-size: 0.9rem; opacity: 0.9;">
+                Advanced machine learning-based cardiovascular risk assessment tool for healthcare professionals.
             </p>
         </div>
     """, unsafe_allow_html=True)
 
-with col2:
+st.markdown('<h1 class="main-title">❤️ Cardiovascular Disease Risk Assessment</h1>', unsafe_allow_html=True)
+st.markdown('<p class="subtitle">AI-Powered Clinical Decision Support System</p>', unsafe_allow_html=True)
+
+st.markdown("""
+    <div class="hero-card">
+        <h2 style="color: #1e3a8a; margin-top: 0;">Welcome to CardioRisk AI</h2>
+        <p style="font-size: 1.1rem; line-height: 1.8; color: #334155;">
+            A state-of-the-art machine learning system designed to assist healthcare professionals 
+            in assessing cardiovascular disease risk. This tool analyzes patient demographics, 
+            vital signs, and lifestyle factors to provide evidence-based risk predictions.
+        </p>
+        <p style="font-size: 1.1rem; line-height: 1.8; color: #334155; margin-top: 1rem;">
+            <strong>Navigate using the sidebar to:</strong>
+        </p>
+        <ul style="font-size: 1.05rem; line-height: 2; color: #475569;">
+            <li><strong>Overview:</strong> Learn about cardiovascular disease and how this system works</li>
+            <li><strong>Risk Prediction:</strong> Assess patient cardiovascular risk</li>
+            <li><strong>Model Insights:</strong> Understand the AI model and its limitations</li>
+            <li><strong>Medical Disclaimer:</strong> Review important legal and ethical information</li>
+            <li><strong>About Project:</strong> Technical details and future development</li>
+        </ul>
+    </div>
+""", unsafe_allow_html=True)
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
     st.markdown("""
-        <div class="glass-card" style='background: linear-gradient(135deg, #667eea, #764ba2); color: white;'>
-            <h3 style='margin: 0;'>🔬 AI Powered</h3>
-            <p style='margin: 0.5rem 0 0 0; font-size: 1.1rem;'>Machine Learning</p>
+        <div style="background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center;">
+            <h3 style="color: #2563eb; margin-bottom: 1rem;">🎯 Accurate</h3>
+            <p style="color: #64748b;">ML-powered risk assessment using validated clinical features</p>
         </div>
     """, unsafe_allow_html=True)
 
-# ================= USER INPUTS =================
-st.markdown("---")
-
-st.markdown("""
-    <div class="glass-card">
-        <h2 style='text-align: center; margin-bottom: 2rem; color: #000000;'>📊 Enter Your Health Data</h2>
-""", unsafe_allow_html=True)
-
-# Input columns
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.markdown("<h3>👤 Personal Info</h3>", unsafe_allow_html=True)
-    gender = st.selectbox("Gender", [1, 2], 
-                         format_func=lambda x: "👨 Male" if x == 1 else "👩 Female")
-    calculated_age = st.number_input("Age (years)", min_value=1, max_value=120, value=40)
-
 with col2:
-    st.markdown("<h3>📏 Measurements</h3>", unsafe_allow_html=True)
-    height = st.number_input("Height (cm)", min_value=50.0, max_value=250.0, value=170.0)
-    weight = st.number_input("Weight (kg)", min_value=10.0, max_value=300.0, value=70.0)
-
-with col3:
-    st.markdown("<h3>❤️ Blood Pressure</h3>", unsafe_allow_html=True)
-    ap_hi = st.number_input("Systolic BP", min_value=50.0, max_value=250.0, value=120.0)
-    ap_lo = st.number_input("Diastolic BP", min_value=30.0, max_value=150.0, value=80.0)
-
-# Second row
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.markdown("<h3>🩸 Blood Tests</h3>", unsafe_allow_html=True)
-    cholesterol = st.selectbox("Cholesterol", [1, 2, 3],
-                              format_func=lambda x: ["✅ Normal", "⚠️ Above Normal", "❌ High"][x-1])
-    gluc = st.selectbox("Glucose", [1, 2, 3],
-                       format_func=lambda x: ["✅ Normal", "⚠️ Above Normal", "❌ High"][x-1])
-
-with col2:
-    st.markdown("<h3>🚬 Lifestyle</h3>", unsafe_allow_html=True)
-    smoke = st.selectbox("Smoker", [0, 1], 
-                        format_func=lambda x: "🚭 No" if x == 0 else "🚬 Yes")
-    alco = st.selectbox("Alcohol", [0, 1], 
-                       format_func=lambda x: "🍷 No" if x == 0 else "🍺 Yes")
-
-with col3:
-    st.markdown("<h3>⚡ Activity</h3>", unsafe_allow_html=True)
-    active = st.selectbox("Physically Active", [0, 1],
-                         format_func=lambda x: "💤 No" if x == 0 else "🏃 Yes")
-
-st.markdown("</div>", unsafe_allow_html=True)
-
-# BMI Display
-bmi = weight / ((height / 100) ** 2)
-col1, col2, col3, col4 = st.columns(4)
-with col3:
-    bmi_status = "✅ Healthy" if bmi < 25 else "⚠️ Overweight" if bmi < 30 else "❌ Obese"
-    st.metric("📊 BMI", f"{bmi:.1f}", bmi_status)
-
-# ================= PREDICT =================
-if st.button("🔮 **PREDICT MY RISK NOW** 🚀", use_container_width=True):
-    st.markdown("---")
-    
-    input_df = pd.DataFrame([{
-        "gender": gender,
-        "height": height,
-        "weight": weight,
-        "ap_hi": ap_hi,
-        "ap_lo": ap_lo,
-        "cholesterol": cholesterol,
-        "gluc": gluc,
-        "smoke": smoke,
-        "alco": alco,
-        "active": active,
-        "calculated_age": calculated_age,
-        "bmi": bmi
-    }])
-
-    with st.spinner("🔬 AI Analyzing your health data..."):
-        prediction = pipeline.predict(input_df)[0]
-        probability = pipeline.predict_proba(input_df)[0][1] * 100  # Convert to percentage
-
-    # ✅ CENTERED RISK BOX WITH PROBABILITY %
     st.markdown("""
-        <div class="result-container">
+        <div style="background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center;">
+            <h3 style="color: #059669; margin-bottom: 1rem;">⚡ Fast</h3>
+            <p style="color: #64748b;">Instant predictions to support timely clinical decisions</p>
+        </div>
     """, unsafe_allow_html=True)
-    
-    if prediction == 1:
-        st.markdown(f"""
-            <div class="result-box">
-                <div class="result-title">⚠️🔥 HIGH RISK DETECTED</div>
-                <div class="result-prob">{probability:.0f}%</div>
-                <div class="result-label">Cardio Disease Risk Probability</div>
-            </div>
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown(f"""
-            <div class="result-box low-risk">
-                <div class="result-title">✅🛡️ LOW RISK</div>
-                <div class="result-prob">{probability:.0f}%</div>
-                <div class="result-label">Cardio Disease Risk Probability</div>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    st.markdown("</div>", unsafe_allow_html=True)
 
-    # Recommendations
-    st.markdown("---")
-    st.markdown("<h2 style='text-align: center; color: #000000;'>💡 Health Recommendations</h2>", unsafe_allow_html=True)
-    
-    recs = {
-        1: ["📞 **Doctor appointment ASAP**", "💊 **Daily BP monitoring**", "🏃‍♂️ **30min exercise**", "🚭 **Quit smoking**", "🥗 **Low-sodium diet**"],
-        0: ["🥗 **Balanced diet**", "🏃 **30min exercise**", "💤 **7-8hrs sleep**", "🚭 **Stay smoke-free**", "📊 **Regular checkups**"]
-    }
-    
-    st.markdown(f"""
-        <div class="glass-card">
-            <h3 style='color: #000000; text-align: center;'>
-                { '🚨 URGENT ACTION REQUIRED' if prediction == 1 else '✅ MAINTAIN YOUR HEALTH' }
-            </h3>
-            <ul style='color: #000000; font-size: 1.2rem; padding-left: 2rem;'>
+with col3:
+    st.markdown("""
+        <div style="background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center;">
+            <h3 style="color: #7c3aed; margin-bottom: 1rem;">🔒 Secure</h3>
+            <p style="color: #64748b;">Designed with healthcare compliance and patient privacy in mind</p>
+        </div>
     """, unsafe_allow_html=True)
-    
-    for item in recs[prediction]:
-        st.markdown(f"<li style='margin: 1rem 0; font-weight: 500;'>{item}</li>", unsafe_allow_html=True)
-    
-    st.markdown("</ul></div>", unsafe_allow_html=True)
 
-# # Footer
-# st.markdown("---")
-# st.markdown("""
-#     <div style='text-align: center; color: white; padding: 2rem; 
-#                 background: rgba(0,0,0,0.3); border-radius: 20px;'>
-#         <h3 style='color: white;'>🔬 AI-Powered Health Assessment</h3>
-#         <p style='color: white;'>⚕️ Educational tool only - consult your doctor</p>
-#     </div>
-# """, unsafe_allow_html=True)
+st.markdown("<br><br>", unsafe_allow_html=True)
+st.markdown("""
+    <div style="text-align: center; color: #94a3b8; font-size: 0.9rem; padding: 2rem; border-top: 1px solid #e2e8f0;">
+        CardioRisk AI v1.0 | For Healthcare Professional Use Only
+        <br>
+        © 2025 Healthcare AI Solutions
+    </div>
+""", unsafe_allow_html=True)
 
 
 # import streamlit as st
@@ -372,7 +208,7 @@ if st.button("🔮 **PREDICT MY RISK NOW** 🚀", use_container_width=True):
 # import pandas as pd
 
 # # ================= LOAD PIPELINE =================
-# pipeline = joblib.load("cardio_pipeline.pkl")
+# pipeline = joblib.load("model.pkl")
 
 # st.title("❤️ Cardio Disease Prediction")
 
