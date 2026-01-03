@@ -1,0 +1,21 @@
+# Created by venv; see https://docs.python.org/3/library/venv.html
+# *
+# Virtual environments
+venv/
+venv310/
+Lib/
+Scripts/
+etc/
+share/
+pyvenv.cfg
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store
+Thumbs.db
